@@ -15,8 +15,7 @@ np.random.seed(seed)
 # reshape to be [samples][pixels][width][height]
 #X_train = X_train.reshape(X_train.shape[0], 1, 28, 28).astype('float32')
 #X_test = X_test.reshape(X_test.shape[0], 1, 28, 28).astype('float32')
-# print(X_train.shape)
-print(y_train)
+print(X_train.shape)
 # normalize inputs from 0-255 to 0-1
 X_train = X_train / 255
 X_test = X_test / 255
@@ -29,7 +28,9 @@ num_classes = y_test.shape[1]
 def baseline_model():
     # create model
     model = Sequential()
-    model.add(Conv2D(32, (5, 5), input_shape=(28, 28), activation='relu'))
+    model.add(Conv2D(32, (10, 10), input_shape=(128, 256), activation='relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Conv2D(32, (10, 10), activation='relu'))
     model.add(MaxPooling2D(pool_size=(2, 2)))
     model.add(Dropout(0.2))
     model.add(Flatten())

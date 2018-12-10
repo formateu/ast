@@ -4,6 +4,7 @@ import copy
 from scipy.io import wavfile
 from scipy.signal import butter, lfilter
 import scipy.ndimage
+import cv2
 
 
 def butter_bandpass(lowcut, highcut, fs, order=5):
@@ -316,7 +317,7 @@ def create_mel_filter(fft_size, n_freq_components=64, start_freq=300, end_freq=8
     return mel_filter, mel_inversion_filter
 
 # USAGE EXAMPLE
-# ### Parameters ###
+### Parameters ###
 # fft_size = 2048  # window size for the FFT
 # step_size = fft_size / 16  # distance to slide along the window (in time)
 # spec_thresh = 4  # threshold for spectrograms (lower filters out more noise)
@@ -327,9 +328,9 @@ def create_mel_filter(fft_size, n_freq_components=64, start_freq=300, end_freq=8
 # shorten_factor = 10  # how much should we compress the x-axis (time)
 # start_freq = 300  # Hz # What frequency to start sampling our melS from
 # end_freq = 8000  # Hz # What frequency to stop sampling our melS from
-#
+
 # # Grab your wav and filter it
-# mywav = 'bushOffersPeace.wav'
+# mywav = '1c84a139_nohash_1.wav'
 # rate, data = wavfile.read(mywav)
 # # data = butter_bandpass_filter(data, lowcut, highcut, rate, order=1)
 # # Only use a short clip for our demo
@@ -340,13 +341,17 @@ def create_mel_filter(fft_size, n_freq_components=64, start_freq=300, end_freq=8
 # wav_spectrogram = pretty_spectrogram(data.astype('float64'), fft_size=fft_size,
 #                                      step_size=step_size, log=True, thresh=spec_thresh)
 #
-# # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(20, 4))
-# # cax = ax.matshow(np.transpose(wav_spectrogram), interpolation='nearest', aspect='auto', cmap=plt.cm.afmhot,
-# #                  origin='lower')
-# # fig.colorbar(cax)
-# # plt.title('Original Spectrogram')
-# # plt.show()
-# # Invert from the spectrogram back to a waveform
+# # print(wav_spectrogram.shape)
+#
+# wav_spectrogram = cv2.resize(wav_spectrogram, (112 , 112), interpolation = cv2.INTER_CUBIC)
+#
+# fig, ax = plt.subplots(nrows=1, ncols=1)
+# cax = ax.matshow(np.transpose(wav_spectrogram), interpolation='nearest', aspect='auto', cmap=plt.cm.afmhot,
+#                  origin='lower')
+# fig.colorbar(cax)
+# plt.title('Original Spectrogram')
+# plt.show()
+# Invert from the spectrogram back to a waveform
 # recovered_audio_orig = invert_pretty_spectrogram(wav_spectrogram, fft_size=fft_size,
 #                                                  step_size=step_size, log=True, n_iter=10)
 # wavfile.write('out', rate, recovered_audio_orig)
