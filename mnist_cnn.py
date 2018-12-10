@@ -1,6 +1,6 @@
 import numpy as np
 from tensorflow.keras.datasets import mnist
-from tensorflow.keras.models import Sequential
+from tensorflow.keras.models import Sequential, save_model
 from tensorflow.keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPooling2D
 from np_utils import to_categorical
 
@@ -43,6 +43,8 @@ def baseline_model():
 model = baseline_model()
 # Fit the model
 model.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=10, batch_size=200, verbose=2)
+
+save_model(model, 'mnist_model')
 # Final evaluation of the model
 scores = model.evaluate(X_test, y_test, verbose=0)
 print("CNN Error: %.2f%%" % (100-scores[1]*100))
