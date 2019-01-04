@@ -5,7 +5,7 @@ import wave
 # from os import listdir
 # from os.path import isfile, join
 import os
-from collections import OrderedDict
+from collections import OrderedDict, Counter
 import re
 from functools import partial
 
@@ -17,15 +17,23 @@ def generate_labels(labels_directory):
             for line in tabfile:
                 spl = line.split("  ")
                 if (len(spl) == 2):
-                    labels_dict[spl[0]] = spl[1].rstrip('\n\r.?!')
+                    labels_dict[spl[0]] = spl[1].lower()
                 else:
-                    labels_dict[spl[0]] = spl[2].rstrip('\n\r.?!')
-                    labels_dict[spl[1]] = spl[2].rstrip('\n\r.?!')
-
+                    labels_dict[spl[0]] = spl[2].lower()
+                    labels_dict[spl[1]] = spl[2].lower()
+                    
     for k, v in labels_dict.items():
-        labels_dict[k] = re.sub(r'\[.+?\]', '', v)
+        if '10th' in v: #found empirically
+            labels_dict[k] = v.replace('10th', 'tenth')
+        labels_dict[k] = re.sub(r'\[.+?\]', '', labels_dict[k])
+        labels_dict[k] = re.sub("[^0-9a-zA-Z ]", "", labels_dict[k])
 
     return labels_dict
+
+
+def remove_sentences(labels_dict):
+    return {k:v for k,v in labels_dict.items() if ' ' not in v}
+
 
 def file_search(path):
     result_list = []
@@ -37,46 +45,63 @@ def file_search(path):
 
 
 def main(data_directory, labels_directory, output_file):
-    labels = []
-    durations = []
-    keys = []
     label_dict = generate_labels(labels_directory)
+    #label_dict = remove_sentences(label_dict)
+    
+    # these words caused CTC loss function error
+    # caused by too long text or too short audio file
+#     forbidden_files = [
+#   #actually whole JE/TKT directory has been dropped
+#         'W4_053.wav', #JE/TKT/F02
+#         'W1_213.wav', #JE/TKT/F04
+#         'W4_136.wav', #JE/TKT/F02
+#         'W4_145.wav', #JE/TKT/F02
+#         'W4_149.wav', #JE/TKT/F02
+#         'W1_107.wav', #JE/TKT/F04
+#         'W1_067.wav', #JE/TKT/F04
+#         'W4_164.wav', #JE/TKT/F02
+#         'W4_012.wav', #JE/TKT/F02
+#         'W4_107.wav', #JE/TKT/F02
+#         ''
+#     ]
+    
+#     label_copy = label_dict.copy()
+#     for k,v in label_copy.items():
+#         if k in forbidden_files:
+#             label_dict.pop(k)
+          
+    # reverse twice to get rid of value repetitions for different keys
+    # this is nondeterministic division of the whole set
+    validation_set = {v:k for k,v in label_dict.items()}
+    validation_set = {v:k for k,v in validation_set.items()}
+    train_set = {k:label_dict[k] for k in set(label_dict) - set(validation_set)}
+    assert(len(train_set) + len(validation_set) == len(label_dict))
     file_list = file_search(data_directory)
+    
+    def save_file(output_file, label_dict, file_list):
+        labels = []
+        durations = []
+        keys = []
+    
+        for fpath in file_list:
+            filename = fpath.split('/')[-1]
+            if filename in label_dict:
+                audio = wave.open(fpath)
+                duration = float(audio.getnframes()) / audio.getframerate()
+                audio.close()
 
-    for fpath in file_list:
-        audio = wave.open(fpath)
-        duration = float(audio.getnframes()) / audio.getframerate()
-        audio.close()
+                if duration != 0.0:
+                    keys.append(fpath)
+                    durations.append(duration)
+                    labels.append(label_dict[filename])
 
-        keys.append(fpath)
-        durations.append(duration)
-        labels.append(label_dict[fpath.split('/')[-1]])
-
-    # for group in os.listdir(data_directory):
-        # if group.startswith('.'):
-            # continue
-        # speaker_path = os.path.join(data_directory, group)
-        # print(speaker_path)
-        # for speaker in os.listdir(speaker_path):
-            # if speaker.startswith('.'):
-                # continue
-            # fpath = os.path.join(speaker_path, speaker)
-            # for file_id in [f for f in os.listdir(fpath) if os.path.isfile(os.path.join(fpath, f))]:
-                # label = label_dict[file_id]
-                # audio_file = os.path.join(fpath, file_id)
-                # audio = wave.open(audio_file)
-                # duration = float(audio.getnframes()) / audio.getframerate()
-                # audio.close()
-
-                # keys.append(audio_file)
-                # durations.append(duration)
-                # labels.append(label_dict[file_id])
-
-    with open(output_file, 'w') as out_file:
-        for i in range(len(keys)):
-            line = json.dumps({'key': keys[i], 'duration': durations[i], 'text': labels[i]})
-            out_file.write(line + '\n')
-
+        with open(output_file, 'w') as out_file:
+            for i in range(len(keys)):
+                line = json.dumps({'key': keys[i], 'duration': durations[i], 'text': labels[i]})
+                out_file.write(line + '\n')
+                
+    save_file('valid_corpus.json', validation_set, file_list)
+    save_file('train_corpus.json', train_set, file_list)
 
 
 if __name__ == '__main__':
