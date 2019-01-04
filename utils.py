@@ -6,8 +6,10 @@ import soundfile
 from numpy.lib.stride_tricks import as_strided
 from char_map import char_map, index_map
 
+
 def calc_feat_dim(window, max_freq):
     return int(0.001 * window * max_freq) + 1
+
 
 def conv_output_length(input_length, filter_size, border_mode, stride,
                        dilation=1):
@@ -57,7 +59,7 @@ def spectrogram(samples, fft_length=256, sample_rate=2, hop_length=128):
     assert not np.iscomplexobj(samples), "Must not pass in complex numbers"
 
     window = np.hanning(fft_length)[:, None]
-    window_norm = np.sum(window**2)
+    window_norm = np.sum(window ** 2)
 
     # The scaling below follows the convention of
     # matplotlib.mlab.specgram which is the same as
@@ -77,7 +79,7 @@ def spectrogram(samples, fft_length=256, sample_rate=2, hop_length=128):
 
     # broadcast window, compute fft over columns and square mod
     x = np.fft.rfft(x * window, axis=0)
-    x = np.absolute(x)**2
+    x = np.absolute(x) ** 2
 
     # scale, 2.0 for everything except dc and fft_length/2
     x[1:-1, :] *= (2.0 / scale)
@@ -119,6 +121,7 @@ def spectrogram_from_file(filename, step=10, window=20, max_freq=None,
         ind = np.where(freqs <= max_freq)[0][-1] + 1
     return np.transpose(np.log(pxx[:ind, :] + eps))
 
+
 def text_to_int_sequence(text):
     """ Convert text to an integer sequence """
     int_sequence = []
@@ -130,6 +133,7 @@ def text_to_int_sequence(text):
         int_sequence.append(ch)
     return int_sequence
 
+
 def int_sequence_to_text(int_sequence):
     """ Convert an integer sequence to text """
     text = []
@@ -137,4 +141,3 @@ def int_sequence_to_text(int_sequence):
         ch = index_map[c]
         text.append(ch)
     return text
-
